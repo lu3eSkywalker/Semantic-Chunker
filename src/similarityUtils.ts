@@ -3,15 +3,19 @@ import { createEmbedding } from './embeddingUtils.js';
 // -----------------------------------------------------
 // -- Calculate cosine similarity between two vectors --
 // -----------------------------------------------------
-export function cosineSimilarity(vecA, vecB) {
+export function cosineSimilarity(vecA: number[], vecB: number[]): number {
+    if(vecA.length !== vecB.length) {
+        throw new Error("Vectors must be of the same length");
+    }
+
     let dotProduct = 0.0;
     let normA = 0.0;
     let normB = 0.0;
 
     for (let i = 0; i < vecA.length; i++) {
-        dotProduct += vecA[i] * vecB[i];
-        normA += vecA[i] ** 2;
-        normB += vecB[i] ** 2;
+        dotProduct += vecA[i]! * vecB[i]!;
+        normA += vecA[i]! ** 2;
+        normB += vecB[i]! ** 2;
     }
 
     normA = Math.sqrt(normA);
@@ -27,15 +31,17 @@ export function cosineSimilarity(vecA, vecB) {
 // ---------------------------------------------------------------
 // -- Function to compute advanced similarities with statistics --
 // ---------------------------------------------------------------
-export async function computeAdvancedSimilarities(sentences, { numSimilaritySentencesLookahead = 2, logging = false } = {}) {
+export async function computeAdvancedSimilarities(sentences: string[], options: { numSimilaritySentencesLookahead?: number; logging?: boolean } = {}): Promise<{similarities: number[], average: number, variance: number}> {
+    const {numSimilaritySentencesLookahead = 2, logging = false} = options;
+
     if (logging) console.log('numSimilaritySentencesLookahead', numSimilaritySentencesLookahead);
 
     const embeddings = await Promise.all(sentences.map(sentence => createEmbedding(sentence)));
-    let similarities = [];
+    let similarities: number[] = [];
     let similaritySum = 0;
 
     for (let i = 0; i < embeddings.length - 1; i++) {
-        let maxSimilarity = cosineSimilarity(embeddings[i], embeddings[i + 1]);
+        let maxSimilarity = cosineSimilarity(embeddings[i]!, embeddings[i + 1]!);
 
         if (logging) {
             console.log(`\nSimilarity scores for sentence ${i}:`);
@@ -43,7 +49,7 @@ export async function computeAdvancedSimilarities(sentences, { numSimilaritySent
         }
 
         for (let j = i + 2; j <= i + numSimilaritySentencesLookahead && j < embeddings.length; j++) {
-            const sim = cosineSimilarity(embeddings[i], embeddings[j]);
+            const sim = cosineSimilarity(embeddings[i]!, embeddings[j]!);
             if (logging) {
                 console.log(`Similarity with sentence ${j}: ${sim}`);
             }
@@ -63,7 +69,7 @@ export async function computeAdvancedSimilarities(sentences, { numSimilaritySent
 // -----------------------------------------------------------
 // -- Function to dynamically adjust the similarity threshold --
 // -----------------------------------------------------------
-export function adjustThreshold(average, variance, baseThreshold = 0.5, lowerBound = 0.2, upperBound = 0.8) {
+export function adjustThreshold(average: number, variance: number, baseThreshold = 0.5, lowerBound = 0.2, upperBound = 0.8) {
     if (lowerBound >= upperBound) {
         console.error("Invalid bounds: lowerBound must be less than upperBound.");
         return baseThreshold;

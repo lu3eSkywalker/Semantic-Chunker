@@ -8,11 +8,27 @@ import { tokenizer } from './embeddingUtils.js';
 import dotenv from "dotenv";
 dotenv.config();
 
+interface ChunkResult {
+    document_id: number,
+    document_name: string,
+    number_of_chunks: number,
+    chunk_number: number,
+    model_name: string,
+    text: string,
+    embedding?: number[],
+    token_length?: number;
+}
+
+export interface DocumentInput {
+    document_text: string;
+    document_name?: string;
+}
+
 // ---------------------------
 // -- Main chunkit function --
 // ---------------------------
 export async function chunkit(
-    documents,
+    documents: DocumentInput[],
     {
         logging = DEFAULT_CONFIG.LOGGING,
         maxTokenSize = DEFAULT_CONFIG.MAX_TOKEN_SIZE,
@@ -27,8 +43,6 @@ export async function chunkit(
         chunkPrefix = DEFAULT_CONFIG.CHUNK_PREFIX,
         excludeChunkPrefixInResults = false,
     } = {}) {
-
-    // if (logging) printVersion();
 
     if (!Array.isArray(documents)) {
         throw new Error('Input must be an array of document objects');
@@ -86,7 +100,7 @@ export async function chunkit(
 
         return Promise.all(finalChunks.map(async (chunk, index) => {
             const prefixedChunk = applyPrefixToChunk(chunkPrefix, chunk);
-            const result = {
+            const result: ChunkResult = {
                 document_id: documentId,
                 document_name: documentName,
                 number_of_chunks: numberOfChunks,

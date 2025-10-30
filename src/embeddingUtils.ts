@@ -4,46 +4,24 @@ import { LRUCache } from "lru-cache";
 import dotenv from "dotenv";
 dotenv.config();
 
-let embeddingModel = null;
+let embeddingModel: GoogleGenerativeAIEmbeddings;
 
-const embeddingCache = new LRUCache({
+const embeddingCache = new LRUCache<string, number[]>({
     max: 100,
     maxSize: 50_000_000,
     sizeCalculation: (value, key) => (value.length * 4) + key.length,
-    ttl: 1000 * 60 * 60, // 1 hour
+    ttl: 1000 * 60 * 60,
 });
-
-export async function initializeEmbeddingUtils({
-    model = "gemini-embedding-001",
-    apiKey = process.env.GOOGLE_GEMINI_API_KEY,
-} = {}) {
-    if (!apiKey) {
-        throw new Error("Google API key is missing. Set it via environment variable or pass explicitly.");
-    }
-
-    embeddingModel = new GoogleGenerativeAIEmbeddings({
-        model,
-        apiKey,
-    });
-
-    embeddingCache.clear();
-
-    return {
-        modelName: model,
-        provider: "Google Generative AI",
-    };
-}
 
 // -------------------------------------
 // -- Function to generate embeddings --
 // -------------------------------------
-export async function createEmbedding(text) {
+export async function createEmbedding(text: string): Promise<number[]> {
 
     embeddingModel = new GoogleGenerativeAIEmbeddings({
         model: "gemini-embedding-001",
-        apiKey: process.env.GOOGLE_GEMINI_API_KEY, // or better: use env variable
+        apiKey: process.env.GOOGLE_GEMINI_API_KEY,
     });
-
 
     const cached = embeddingCache.get(text);
     if (cached) return cached;
@@ -58,8 +36,11 @@ export async function createEmbedding(text) {
     }
 }
 
+interface TokenizerOutput {
+    input_ids: { size: number };
+}
 
-export const tokenizer = (text) => {
+export const tokenizer = (text: string): TokenizerOutput => {
     const tokens = text.split(/\s+/);
     return {
         input_ids: { size: tokens.length },

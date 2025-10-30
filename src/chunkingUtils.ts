@@ -5,7 +5,7 @@ import { createEmbedding } from './embeddingUtils.js';
 // -----------------------------------------------------------
 // -- Function to create chunks of text based on similarity --
 // -----------------------------------------------------------
-export function createChunks(sentences, similarities, maxTokenSize, similarityThreshold, logging) {
+export function createChunks(sentences: string[], similarities: number[] | null, maxTokenSize: number, similarityThreshold: number, logging: boolean) {
     let chunks = [];
     let currentChunk = [sentences[0]];
     
@@ -14,7 +14,7 @@ export function createChunks(sentences, similarities, maxTokenSize, similarityTh
     }
 
     for (let i = 1; i < sentences.length; i++) {
-        const nextSentence = sentences[i];
+        const nextSentence = sentences[i]!;
         
         // For cramit (when similarities is null), only check token size
         if (!similarities) {
@@ -32,7 +32,7 @@ export function createChunks(sentences, similarities, maxTokenSize, similarityTh
         }
 
         // Check similarity first for chunkit
-        if (similarities[i - 1] >= similarityThreshold) {
+        if (similarities[i - 1]! >= similarityThreshold) {
             if (logging) {
                 console.log(`Adding sentence ${i} with similarity ${similarities[i - 1]}`);
             }
@@ -67,18 +67,18 @@ export function createChunks(sentences, similarities, maxTokenSize, similarityTh
 // --------------------------------------------------------------
 // -- Optimize and Rebalance Chunks (optionally use Similarity) --
 // --------------------------------------------------------------
-export async function optimizeAndRebalanceChunks(combinedChunks, tokenizer, maxTokenSize, combineChunksSimilarityThreshold = 0.5) {
+export async function optimizeAndRebalanceChunks(combinedChunks: string[], tokenizer, maxTokenSize: number, combineChunksSimilarityThreshold = 0.5) {
     let optimizedChunks = [];
     let currentChunkText = "";
     let currentChunkTokenCount = 0;
     let currentEmbedding = null;
 
     for (let index = 0; index < combinedChunks.length; index++) {
-        const chunk = combinedChunks[index];
+        const chunk = combinedChunks[index]!;
         const chunkTokenCount = tokenizer(chunk).input_ids.size;
 
         if (currentChunkText && (currentChunkTokenCount + chunkTokenCount <= maxTokenSize)) {
-            const nextEmbedding = await createEmbedding(chunk);
+            const nextEmbedding = await createEmbedding(chunk!);
             const similarity = currentEmbedding ? cosineSimilarity(currentEmbedding, nextEmbedding) : 0;
 
             if (similarity >= combineChunksSimilarityThreshold) {
@@ -104,7 +104,7 @@ export async function optimizeAndRebalanceChunks(combinedChunks, tokenizer, maxT
 // ------------------------------------------------
 // -- Helper function to apply prefix to a chunk --
 // ------------------------------------------------
-export function applyPrefixToChunk(chunkPrefix, chunk) {
+export function applyPrefixToChunk(chunkPrefix: string, chunk: string) {
     if (chunkPrefix && chunkPrefix.trim()) {
         return `${chunkPrefix}: ${chunk}`;
     }
